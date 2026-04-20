@@ -12,9 +12,9 @@ import { UserKyselyRepository } from './infrastructure/out/user-kysely.repositor
 
 @Module({
   imports: [
+    ConfigModule,
     PassportModule,
     JwtModule.registerAsync({
-      imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
         signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') ?? '1h' },

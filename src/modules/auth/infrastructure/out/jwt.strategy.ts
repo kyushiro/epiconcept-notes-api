@@ -7,10 +7,13 @@ import { JwtPayload, RequestUser } from '../../domain/user.entity';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(config: ConfigService) {
+    const secret = config.get<string>('JWT_SECRET');
+    console.log('JWT SECRET VALUE:', secret ? 'FOUND' : 'UNDEFINED');
+    console.log('ALL ENV:', JSON.stringify(process.env));
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.get<string>('JWT_SECRET'),
+      secretOrKey: secret,
     });
   }
 
