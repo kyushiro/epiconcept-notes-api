@@ -465,6 +465,76 @@ epiconcept-notes-api/
 
 ---
 
+## CI/CD
+
+### Pipeline
+
+```
+Push to main
+     │
+     ▼
+┌─────────────────────────────┐
+│  test (ubuntu-latest)       │
+│  ├─ npm ci (backend)        │
+│  ├─ npm ci (frontend)       │
+│  ├─ playwright install      │
+│  └─ npm run test:e2e        │
+└────────────┬────────────────┘
+             │ tests pass
+     ┌───────┴────────┐
+     ▼                ▼
+┌──────────┐   ┌──────────────┐
+│ Railway  │   │    Vercel    │
+│ backend  │   │   frontend   │
+│ deploy   │   │   deploy     │
+└──────────┘   └──────────────┘
+```
+
+Deploy jobs run only on pushes to `main` (not on PRs). Both are independent and run in parallel after the test job passes.
+
+### GitHub Secrets required
+
+| Secret | Description |
+|---|---|
+| `RAILWAY_TOKEN` | Railway API token |
+| `VERCEL_TOKEN` | Vercel API token |
+| `VERCEL_ORG_ID` | Vercel team/org ID |
+| `VERCEL_PROJECT_ID` | Vercel project ID |
+
+### Getting the tokens
+
+**Railway token**
+1. Go to [railway.app](https://railway.app) → Account Settings → Tokens
+2. Click **New Token**, name it `github-actions`
+3. Copy the token → add as `RAILWAY_TOKEN` secret in GitHub (Settings → Secrets → Actions)
+
+**Vercel token**
+1. Go to [vercel.com](https://vercel.com) → Settings → Tokens
+2. Click **Create Token**, name it `github-actions`, scope to your team
+3. Copy the token → add as `VERCEL_TOKEN` secret
+
+**Vercel org and project IDs**
+```bash
+# From the frontend/ directory, after linking the project:
+cd frontend
+vercel link
+# IDs are written to frontend/.vercel/project.json
+cat .vercel/project.json
+# { "orgId": "...", "projectId": "..." }
+```
+Add `orgId` → `VERCEL_ORG_ID` and `projectId` → `VERCEL_PROJECT_ID` as GitHub secrets.
+
+### Environment variables (backend — set in Railway dashboard)
+
+| Variable | Required | Description |
+|---|---|---|
+| `JWT_SECRET` | **yes** | JWT signing secret |
+| `JWT_EXPIRES_IN` | no (default `1h`) | Token lifetime |
+| `PORT` | no (default `3000`) | Listening port |
+| `DATABASE_PATH` | no (default `./db.sqlite`) | SQLite file path |
+
+---
+
 ## Choix techniques
 
 ### NestJS 10 (backend)

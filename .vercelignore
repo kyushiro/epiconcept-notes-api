@@ -1,0 +1,9 @@
+node_modules
+src
+dist
+db.sqlite
+db-test.sqlite
+scripts
+.env
+.env.*
+*.local

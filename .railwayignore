@@ -1,0 +1,8 @@
+node_modules
+frontend
+dist
+db.sqlite
+db-test.sqlite
+.env
+.env.*
+*.local
