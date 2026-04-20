@@ -1,3 +1,9 @@
+console.log('ENV CHECK:', {
+  JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+});
+
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
