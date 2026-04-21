@@ -35,20 +35,13 @@ jobs:
           DATABASE_PATH: ./db-test.sqlite
 
   deploy-backend:
-    name: Deploy backend to Railway
+    name: Confirm Railway Auto-Deploy
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy to Railway
-        run: railway up --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Railway deploys automatically on push
+        run: echo "Railway auto-deploys from GitHub push. Backend deployment triggered."
 
   deploy-frontend:
     name: Deploy Frontend to Vercel
