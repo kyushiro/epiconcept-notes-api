@@ -1,11 +1,4 @@
-console.log('=== API CLIENT DEBUG ===');
-console.log('import.meta.env:', import.meta.env);
-console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
-console.log('MODE:', import.meta.env.MODE);
-console.log('=======================');
-
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
-console.log('BASE URL being used:', BASE_URL);
 
 function getToken(): string | null {
   return localStorage.getItem('token');

@@ -18,15 +18,16 @@ async function bootstrap() {
     }),
   );
 
-  const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
-  ];
   app.enableCors({
-    origin: allowedOrigins,
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://epiconcept-notes-frontend.vercel.app',
+      /\.vercel\.app$/,
+    ],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'x-tenant-id'],
     exposedHeaders: ['X-Tenant-Id'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
 
