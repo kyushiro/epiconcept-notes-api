@@ -18,8 +18,13 @@ async function bootstrap() {
     }),
   );
 
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+  ];
   app.enableCors({
-    origin: 'http://localhost:5173',
+    origin: allowedOrigins,
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'x-tenant-id'],
     exposedHeaders: ['X-Tenant-Id'],
     credentials: true,
