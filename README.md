@@ -465,73 +465,61 @@ epiconcept-notes-api/
 
 ---
 
-## CI/CD
+## Intégration Continue et Déploiement Continu (CI/CD)
 
-### Pipeline
+### Philosophie
+
+Aucun code n'atteint la production sans avoir été validé par la suite de tests. Ce principe est appliqué mécaniquement par le pipeline : les jobs de déploiement sont déclarés comme dépendants du job de test, ce qui les rend techniquement impossibles à déclencher si un test échoue. Il ne s'agit pas d'une convention, mais d'une contrainte structurelle de la pipeline.
+
+### Déroulement du pipeline
 
 ```
-Push to main
-     │
-     ▼
-┌─────────────────────────────┐
-│  test (ubuntu-latest)       │
-│  ├─ npm ci (backend)        │
-│  ├─ npm ci (frontend)       │
-│  ├─ playwright install      │
-│  └─ npm run test:e2e        │
-└────────────┬────────────────┘
-             │ tests pass
-     ┌───────┴────────┐
-     ▼                ▼
-┌──────────┐   ┌──────────────┐
-│ Railway  │   │    Vercel    │
-│ backend  │   │   frontend   │
-│ deploy   │   │   deploy     │
-└──────────┘   └──────────────┘
+push sur main
+      ↓
+GitHub Actions déclenché
+      ↓
+Installation des dépendances → Build → Tests Playwright e2e
+      ↓ (bloqué si un test échoue)
+Confirmation du déploiement Railway (backend)
+      ↓
+Déploiement frontend → Vercel
+      ↓
+Application live ✅
 ```
 
-Deploy jobs run only on pushes to `main` (not on PRs). Both are independent and run in parallel after the test job passes.
+La pipeline ne se déclenche que sur les pushs vers `main`. Les pull requests exécutent uniquement les tests, sans jamais toucher aux environnements de production.
 
-### GitHub Secrets required
+### Les trois jobs
 
-| Secret | Description |
-|---|---|
-| `RAILWAY_TOKEN` | Railway API token |
-| `VERCEL_TOKEN` | Vercel API token |
-| `VERCEL_ORG_ID` | Vercel team/org ID |
-| `VERCEL_PROJECT_ID` | Vercel project ID |
+**1. Tests e2e Playwright**
 
-### Getting the tokens
+C'est le seul juge de la qualité. Il installe les dépendances backend et frontend, lance Chromium via Playwright, puis exécute l'ensemble de la suite de tests end-to-end. Ces tests couvrent :
 
-**Railway token**
-1. Go to [railway.app](https://railway.app) → Account Settings → Tokens
-2. Click **New Token**, name it `github-actions`
-3. Copy the token → add as `RAILWAY_TOKEN` secret in GitHub (Settings → Secrets → Actions)
+- l'authentification (connexion, inscription, redirections, tokens JWT) ;
+- le CRUD complet des notes et des réunions via l'interface ;
+- l'isolation multi-tenant — les données d'un tenant ne sont jamais visibles depuis un autre ;
+- le contrôle d'accès par rôle (RBAC) — seul un admin peut supprimer une note.
 
-**Vercel token**
-1. Go to [vercel.com](https://vercel.com) → Settings → Tokens
-2. Click **Create Token**, name it `github-actions`, scope to your team
-3. Copy the token → add as `VERCEL_TOKEN` secret
+Si un seul test échoue, les deux jobs de déploiement suivants sont annulés automatiquement.
 
-**Vercel org and project IDs**
-```bash
-# From the frontend/ directory, after linking the project:
-cd frontend
-vercel link
-# IDs are written to frontend/.vercel/project.json
-cat .vercel/project.json
-# { "orgId": "...", "projectId": "..." }
-```
-Add `orgId` → `VERCEL_ORG_ID` and `projectId` → `VERCEL_PROJECT_ID` as GitHub secrets.
+**2. Confirmation du déploiement Railway (backend)**
 
-### Environment variables (backend — set in Railway dashboard)
+Railway surveille la branche `main` en continu et déclenche un déploiement dès qu'un nouveau commit y est poussé. Ce job ne fait pas le déploiement lui-même — il sert de point de synchronisation : son existence dans la pipeline garantit que Vercel ne déploie le frontend qu'après que les tests ont validé le commit qui déclenchera le déploiement backend.
 
-| Variable | Required | Description |
+**3. Déploiement frontend vers Vercel**
+
+Ce job récupère l'environnement de production depuis Vercel, compile le frontend en intégrant les variables d'environnement (notamment l'URL du backend Railway) dans le bundle Vite, puis publie le résultat sur le CDN Vercel. Les variables sont injectées au moment du build — elles sont figées dans le bundle et ne peuvent pas être modifiées sans recompilation.
+
+### Comportement en cas d'échec
+
+Lorsqu'un test échoue, GitHub Actions interrompt la pipeline dès le job de test. Les jobs de déploiement backend et frontend ne sont pas déclenchés. La production reste dans l'état du dernier déploiement réussi. GitHub notifie l'auteur du commit par email et marque le commit comme échoué dans l'interface.
+
+### Environnements de production
+
+| Composant | Plateforme | Caractéristiques |
 |---|---|---|
-| `JWT_SECRET` | **yes** | JWT signing secret |
-| `JWT_EXPIRES_IN` | no (default `1h`) | Token lifetime |
-| `PORT` | no (default `3000`) | Listening port |
-| `DATABASE_PATH` | no (default `./db.sqlite`) | SQLite file path |
+| Backend (NestJS) | Railway | Node.js, déploiement automatique sur push, variables d'environnement gérées par Railway |
+| Frontend (React + Vite) | Vercel | CDN mondial, déploiement instantané, variables injectées au build |
 
 ---
 
