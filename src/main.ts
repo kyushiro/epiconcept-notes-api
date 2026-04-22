@@ -7,9 +7,19 @@ console.log('ENV CHECK:', {
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { runMigrations } from './database/migrate';
+import { seedDatabase } from './database/seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  console.log('Running migrations...');
+  await runMigrations();
+  console.log('Migrations complete.');
+
+  console.log('Running seed...');
+  await seedDatabase();
+  console.log('Seed complete.');
 
   app.useGlobalPipes(
     new ValidationPipe({

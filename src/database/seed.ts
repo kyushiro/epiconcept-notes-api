@@ -7,9 +7,21 @@ const TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const ADMIN_ID  = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 const USER_ID   = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
 
-async function seed(): Promise<void> {
+export async function seedDatabase(): Promise<void> {
   const dbPath = process.env.DATABASE_PATH ?? './db.sqlite';
   const db = new Kysely<Database>({ dialect: new SqlJsDialect(dbPath) });
+
+  const existing = await db
+    .selectFrom('users')
+    .select('id')
+    .where('email', '=', 'admin@test.com')
+    .executeTakeFirst();
+
+  if (existing) {
+    await db.destroy();
+    console.log('Seed skipped: admin@test.com already exists.');
+    return;
+  }
 
   const now = new Date().toISOString();
 
@@ -54,7 +66,10 @@ async function seed(): Promise<void> {
   console.log('Users     : admin@test.com / user@test.com  (password: password123)');
 }
 
-seed().catch((err) => {
-  console.error('Seed failed:', err);
-  process.exit(1);
-});
+// CLI entrypoint
+if (require.main === module) {
+  seedDatabase().catch((err) => {
+    console.error('Seed failed:', err);
+    process.exit(1);
+  });
+}

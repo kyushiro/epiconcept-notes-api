@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { Database } from './database.types';
 
-async function migrate(): Promise<void> {
+export async function runMigrations(): Promise<void> {
   const dbPath = process.env.DATABASE_PATH ?? './db.sqlite';
 
   const db = new Kysely<Database>({
@@ -32,14 +32,19 @@ async function migrate(): Promise<void> {
     }
   }
 
+  await db.destroy();
+
   if (error) {
-    console.error('Migration failed:', error);
-    await db.destroy();
-    process.exit(1);
+    throw new Error(`Migration failed: ${error}`);
   }
 
-  await db.destroy();
   console.log('All migrations completed.');
 }
 
-migrate();
+// CLI entrypoint
+if (require.main === module) {
+  runMigrations().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

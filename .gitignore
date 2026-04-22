@@ -4,3 +4,4 @@ dist
 .vercel
 db.sqlite
 db-test.sqlite
+frontend/playwright-report

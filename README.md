@@ -109,11 +109,7 @@ npm install
 
 ### Initialisation de la base de données
 
-```bash
-# Depuis la racine — à exécuter une seule fois (ou après une réinitialisation)
-npm run migration:run   # Crée les tables (tenants, users, notes, meetings)
-npm run db:seed         # Insère le tenant et les utilisateurs de test
-```
+Les migrations et le seed s'exécutent **automatiquement au démarrage** de l'application — aucune commande manuelle n'est nécessaire. Les commandes `npm run migration:run` et `npm run db:seed` restent disponibles pour une exécution explicite si besoin.
 
 Le fichier de base de données est créé à `./db.sqlite` par défaut (configurable via `DATABASE_PATH`).
 
@@ -138,6 +134,8 @@ JWT_SECRET=changeme npm run start:dev
 ```
 
 Le serveur démarre sur `http://localhost:3000` en mode watch (rechargement automatique).
+
+> Au premier démarrage (ou après une réinitialisation), l'application exécute automatiquement les migrations et le script de seed. Aucune commande manuelle n'est nécessaire.
 
 ### Backend (production)
 
@@ -506,6 +504,8 @@ Si un seul test échoue, les deux jobs de déploiement suivants sont annulés au
 
 Railway surveille la branche `main` en continu et déclenche un déploiement dès qu'un nouveau commit y est poussé. Ce job ne fait pas le déploiement lui-même — il sert de point de synchronisation : son existence dans la pipeline garantit que Vercel ne déploie le frontend qu'après que les tests ont validé le commit qui déclenchera le déploiement backend.
 
+> À chaque démarrage, NestJS exécute automatiquement les migrations (idempotentes) et vérifie si le seed initial est nécessaire. Cette logique garantit que la base de données de production est toujours dans un état cohérent, sans intervention manuelle.
+
 **3. Déploiement frontend vers Vercel**
 
 Ce job récupère l'environnement de production depuis Vercel, compile le frontend en intégrant les variables d'environnement (notamment l'URL du backend Railway) dans le bundle Vite, puis publie le résultat sur le CDN Vercel. Les variables sont injectées au moment du build — elles sont figées dans le bundle et ne peuvent pas être modifiées sans recompilation.
@@ -556,6 +556,10 @@ React 19 avec le plugin `@vitejs/plugin-react` offre un démarrage à froid rapi
 ### Playwright 1.59 (tests e2e)
 
 Playwright est utilisé pour les tests end-to-end avec Chromium uniquement (suffisant pour valider le comportement fonctionnel). La configuration lance automatiquement deux serveurs dédiés (backend sur port 3001, frontend sur port 5174) avec une base de données isolée (`db-test.sqlite`), garantissant que les tests ne perturbent pas les données de développement. Le mode `workers: 1` assure l'exécution séquentielle et évite les conflits d'état en base de données entre les tests.
+
+### Migrations et seed automatiques
+
+Les migrations Kysely et le script de seed s'exécutent au démarrage de l'application via `main.ts`. Les deux opérations sont idempotentes : les migrations utilisent une table de suivi pour ne jamais rejouer une migration déjà appliquée, et le seed vérifie l'existence des données avant toute insertion. Ce choix simplifie les déploiements (Railway, Docker) en éliminant les étapes manuelles post-déploiement.
 
 ### class-validator + class-transformer
 
